@@ -1,0 +1,2558 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FRDLY HELPER — On-Demand Local Services</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+  <style>
+    :root {
+      --bg: #070B19;
+      --bg-card: #0D152D;
+      --bg-card-hover: #121D3D;
+      --bg-card-glass: rgba(13, 21, 45, 0.72);
+      --bg-input: #080E21;
+      --border: rgba(255, 255, 255, 0.08);
+      --border-focus: #00D2FF;
+      --border-glow: rgba(121, 82, 252, 0.4);
+      --primary: #7952FC;
+      --primary-hover: #673DF5;
+      --cyan: #00D2FF;
+      --mint: #00E599;
+      --mint-glow: rgba(0, 229, 153, 0.3);
+      --amber: #FFB800;
+      --coral: #FF4757;
+      --text: #F5F7FF;
+      --text-muted: #8F9BB7;
+      --text-dim: #556285;
+      --gradient-primary: linear-gradient(135deg, #7952FC 0%, #00D2FF 100%);
+      --gradient-btn: linear-gradient(90deg, #7952FC 0%, #00D2FF 100%);
+      --gradient-btn-hover: linear-gradient(90deg, #6B40F5 0%, #00BBE6 100%);
+      --gradient-success: linear-gradient(135deg, #059669 0%, #00E599 100%);
+      --gradient-danger: linear-gradient(135deg, #DC2626 0%, #FF4757 100%);
+      --sidebar-width: 260px;
+      --header-height: 68px;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, 'Inter', 'Segoe UI', Roboto, sans-serif;
+      background: radial-gradient(circle at 10% 0%, #151B42 0%, var(--bg) 60%) fixed;
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+      font-size: 15px;
+      line-height: 1.5;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: #1B264A; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #2B3B70; }
+
+    /* Top Navigation Header */
+    header.site-header {
+      height: var(--header-height);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(7, 11, 25, 0.85);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: inherit;
+      cursor: pointer;
+    }
+    .brand-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: var(--gradient-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 20px var(--border-glow);
+    }
+    .brand-icon svg { width: 22px; height: 22px; fill: #fff; }
+    .brand-text h1 {
+      margin: 0;
+      font-size: 1.25rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      background: var(--gradient-primary);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: inline-block;
+    }
+    .brand-text span {
+      display: block;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      font-weight: 600;
+      margin-top: -2px;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    /* Header Nav Links (Guest Mode) */
+    .guest-nav {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+    .guest-nav a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 0.92rem;
+      transition: color .2s;
+    }
+    .guest-nav a:hover { color: var(--cyan); }
+
+    /* User Profile Pill in Header */
+    .user-pill {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 14px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 99px;
+      font-size: 0.9rem;
+    }
+    .user-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--gradient-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: #fff;
+      text-transform: uppercase;
+    }
+    .role-badge {
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: rgba(121, 82, 252, 0.2);
+      color: var(--cyan);
+      border: 1px solid rgba(0, 210, 255, 0.3);
+    }
+    .role-badge.provider {
+      background: rgba(0, 229, 153, 0.15);
+      color: var(--mint);
+      border-color: rgba(0, 229, 153, 0.35);
+    }
+    .role-badge.admin {
+      background: rgba(255, 184, 0, 0.15);
+      color: var(--amber);
+      border-color: rgba(255, 184, 0, 0.35);
+    }
+
+    /* Layout Shell */
+    .app-shell {
+      display: flex;
+      min-height: calc(100vh - var(--header-height));
+    }
+
+    /* Sidebar Navigation */
+    aside.sidebar {
+      width: var(--sidebar-width);
+      background: rgba(10, 16, 36, 0.7);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-right: 1px solid var(--border);
+      padding: 24px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      flex-shrink: 0;
+      transition: transform .25s ease;
+    }
+
+    .nav-label {
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      font-weight: 700;
+      margin: 14px 12px 6px;
+    }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      color: var(--text-muted);
+      text-decoration: none;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all .2s;
+      border: 1px solid transparent;
+      background: transparent;
+      width: 100%;
+      text-align: left;
+    }
+    .nav-item:hover {
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text);
+    }
+    .nav-item.active {
+      background: linear-gradient(90deg, rgba(121, 82, 252, 0.25), rgba(0, 210, 255, 0.12));
+      color: #fff;
+      border-color: rgba(121, 82, 252, 0.5);
+      box-shadow: 0 4px 16px rgba(121, 82, 252, 0.15);
+    }
+    .nav-item svg {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+      fill: currentColor;
+    }
+    .nav-item .badge {
+      margin-left: auto;
+      font-size: 0.72rem;
+      padding: 2px 7px;
+      border-radius: 99px;
+      background: var(--primary);
+      color: #fff;
+      font-weight: 700;
+    }
+
+    .sidebar-footer {
+      margin-top: auto;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    /* Main Content Area */
+    main.content-area {
+      flex: 1;
+      padding: 28px;
+      max-width: 1280px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    /* Common Components: Cards, Grids */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 22px;
+      transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .card:hover {
+      border-color: rgba(121, 82, 252, 0.4);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4), 0 0 20px rgba(121, 82, 252, 0.12);
+    }
+    .card-glass {
+      background: var(--bg-card-glass);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+
+    .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 18px; }
+    .grid-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+
+    /* Buttons */
+    button, .btn {
+      font-family: inherit;
+      font-size: 0.92rem;
+      font-weight: 600;
+      padding: 10px 18px;
+      border-radius: 10px;
+      border: 0;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all .2s;
+      color: #fff;
+      background: var(--gradient-btn);
+      box-shadow: 0 4px 14px rgba(121, 82, 252, 0.3);
+      text-decoration: none;
+    }
+    button:hover, .btn:hover {
+      background: var(--gradient-btn-hover);
+      box-shadow: 0 6px 20px rgba(0, 210, 255, 0.35);
+      transform: translateY(-1px);
+    }
+    button:active, .btn:active { transform: scale(0.97); }
+    button:disabled, .btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; box-shadow: none; }
+
+    button.ghost, .btn.ghost {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--border);
+      color: var(--text);
+      box-shadow: none;
+    }
+    button.ghost:hover, .btn.ghost:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: var(--cyan);
+      color: var(--cyan);
+    }
+
+    button.success, .btn.success {
+      background: var(--gradient-success);
+      box-shadow: 0 4px 14px rgba(0, 229, 153, 0.3);
+    }
+    button.danger, .btn.danger {
+      background: var(--gradient-danger);
+      box-shadow: 0 4px 14px rgba(255, 71, 87, 0.3);
+    }
+
+    /* Form Inputs */
+    input, select, textarea {
+      font-family: inherit;
+      font-size: 0.92rem;
+      width: 100%;
+      padding: 11px 14px;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      outline: none;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--border-focus);
+      box-shadow: 0 0 16px rgba(0, 210, 255, 0.25);
+    }
+    label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    /* Toggle Switch */
+    .toggle-switch {
+      position: relative;
+      display: inline-block;
+      width: 48px;
+      height: 26px;
+    }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background-color: #1A2648;
+      border-radius: 99px;
+      transition: .3s;
+      border: 1px solid var(--border);
+    }
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      border-radius: 50%;
+      transition: .3s;
+    }
+    input:checked + .slider {
+      background: var(--gradient-success);
+      box-shadow: 0 0 12px rgba(0, 229, 153, 0.4);
+    }
+    input:checked + .slider:before { transform: translateX(22px); }
+
+    /* Category Cards (Customer Dashboard) */
+    .category-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      cursor: pointer;
+      transition: all .25s ease;
+      gap: 10px;
+      text-decoration: none;
+      color: inherit;
+    }
+    .category-card:hover, .category-card.active {
+      transform: translateY(-4px);
+      border-color: var(--cyan);
+      box-shadow: 0 10px 24px rgba(0, 210, 255, 0.2);
+      background: linear-gradient(180deg, rgba(0, 210, 255, 0.12), var(--bg-card));
+    }
+    .category-icon {
+      width: 52px;
+      height: 52px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6rem;
+      background: rgba(121, 82, 252, 0.15);
+      border: 1px solid rgba(121, 82, 252, 0.3);
+      color: var(--cyan);
+      transition: transform .25s;
+    }
+    .category-card:hover .category-icon { transform: scale(1.1); }
+    .category-title { font-weight: 700; font-size: 0.95rem; }
+    .category-sub { font-size: 0.78rem; color: var(--text-muted); }
+
+    /* Progress Stepper */
+    .stepper {
+      display: flex;
+      justify-content: space-between;
+      position: relative;
+      margin: 20px 0;
+    }
+    .stepper::before {
+      content: '';
+      position: absolute;
+      top: 14px;
+      left: 16px;
+      right: 16px;
+      height: 3px;
+      background: #1B274A;
+      z-index: 1;
+    }
+    .step-node {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+    }
+    .step-circle {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: #121A33;
+      border: 2px solid #2B3D6B;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      transition: all .25s;
+    }
+    .step-node.active .step-circle {
+      background: var(--primary);
+      border-color: var(--cyan);
+      color: #fff;
+      box-shadow: 0 0 16px var(--cyan-glow);
+    }
+    .step-node.completed .step-circle {
+      background: var(--mint);
+      border-color: var(--mint);
+      color: #070B19;
+    }
+    .step-node.completed::after {
+      content: '';
+      position: absolute;
+    }
+    .step-name { font-size: 0.78rem; color: var(--text-muted); font-weight: 500; }
+    .step-node.active .step-name { color: var(--cyan); font-weight: 700; }
+
+    /* Star Rating */
+    .stars { display: flex; gap: 6px; cursor: pointer; }
+    .star-btn {
+      font-size: 1.8rem;
+      color: #243560;
+      background: transparent;
+      border: 0;
+      padding: 0;
+      box-shadow: none;
+      cursor: pointer;
+      transition: color .15s, transform .15s;
+    }
+    .star-btn:hover, .star-btn.on { color: var(--amber); text-shadow: 0 0 12px rgba(255, 184, 0, 0.4); }
+    .star-btn:hover { transform: scale(1.2); }
+
+    /* Status Tags */
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: 99px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-transform: capitalize;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--border);
+    }
+    .tag.pulse::before {
+      content: '';
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: currentColor;
+      box-shadow: 0 0 8px currentColor;
+    }
+    .tag-requested { color: var(--amber); border-color: rgba(255, 184, 0, 0.3); background: rgba(255, 184, 0, 0.1); }
+    .tag-accepted, .tag-on_the_way, .tag-arrived { color: var(--cyan); border-color: rgba(0, 210, 255, 0.3); background: rgba(0, 210, 255, 0.1); }
+    .tag-estimate_submitted { color: #A78BFA; border-color: rgba(167, 139, 250, 0.3); background: rgba(167, 139, 250, 0.1); }
+    .tag-estimate_approved, .tag-in_progress { color: var(--mint); border-color: rgba(0, 229, 153, 0.3); background: rgba(0, 229, 153, 0.1); }
+    .tag-completed { color: #10B981; border-color: rgba(16, 185, 129, 0.3); background: rgba(16, 185, 129, 0.1); }
+    .tag-cancelled, .tag-rejected { color: var(--coral); border-color: rgba(255, 71, 87, 0.3); background: rgba(255, 71, 87, 0.1); }
+    .tag-emergency {
+      background: rgba(255, 71, 87, 0.2);
+      color: #FF5E6D;
+      border: 1px solid rgba(255, 71, 87, 0.5);
+      animation: pulseAlert 1.5s infinite;
+    }
+    @keyframes pulseAlert {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.4); }
+      50% { box-shadow: 0 0 0 8px rgba(255, 71, 87, 0); }
+    }
+
+    /* Modals & Overlays */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(3, 6, 15, 0.82);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      z-index: 200;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .25s ease;
+    }
+    .modal-overlay.open { opacity: 1; pointer-events: auto; }
+    .modal {
+      background: var(--bg-card);
+      border: 1px solid rgba(121, 82, 252, 0.35);
+      border-radius: 20px;
+      max-width: 620px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6), 0 0 30px rgba(121, 82, 252, 0.2);
+      transform: scale(0.95);
+      transition: transform .25s ease;
+      padding: 28px;
+    }
+    .modal-overlay.open .modal { transform: scale(1); }
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+    .modal-header h3 { margin: 0; font-size: 1.3rem; }
+    .modal-close {
+      background: rgba(255, 255, 255, 0.06);
+      border: 0;
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      color: var(--text-muted);
+      padding: 0;
+      box-shadow: none;
+    }
+    .modal-close:hover { background: rgba(255, 255, 255, 0.15); color: #fff; }
+
+    /* Toast Notification */
+    #toast {
+      position: fixed;
+      bottom: 28px;
+      right: 28px;
+      z-index: 999;
+      background: rgba(18, 27, 58, 0.95);
+      border: 1px solid var(--cyan);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 210, 255, 0.25);
+      border-radius: 12px;
+      padding: 12px 20px;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all .3s cubic-bezier(0.16, 1, 0.3, 1);
+      pointer-events: none;
+    }
+    #toast.show { transform: translateY(0); opacity: 1; pointer-events: auto; }
+
+    /* Offline Banner */
+    #offline-bar {
+      display: none;
+      background: linear-gradient(90deg, #FFB800, #FF8A00);
+      color: #070B19;
+      padding: 8px 16px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-align: center;
+      position: sticky;
+      top: var(--header-height);
+      z-index: 90;
+      box-shadow: 0 4px 14px rgba(255, 184, 0, 0.25);
+    }
+
+    /* Tables (Admin) */
+    .table-container {
+      width: 100%;
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--bg-card);
+    }
+    table { width: 100%; border-collapse: collapse; text-align: left; }
+    th {
+      background: rgba(255, 255, 255, 0.03);
+      padding: 12px 16px;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-dim);
+      border-bottom: 1px solid var(--border);
+    }
+    td {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.88rem;
+    }
+    tr:last-child td { border-bottom: 0; }
+    tr:hover td { background: rgba(255, 255, 255, 0.02); }
+
+    /* Map Box */
+    .map-box {
+      width: 100%;
+      height: 320px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+      margin: 12px 0;
+      background: #0B1226;
+      position: relative;
+    }
+
+    /* Mobile Hamburger */
+    .hamburger {
+      display: none;
+      background: transparent;
+      border: 0;
+      padding: 8px;
+      cursor: pointer;
+      color: var(--text);
+      box-shadow: none;
+    }
+
+    @media (max-width: 900px) {
+      aside.sidebar {
+        position: fixed;
+        top: var(--header-height);
+        left: 0;
+        bottom: 0;
+        z-index: 150;
+        transform: translateX(-100%);
+      }
+      aside.sidebar.open { transform: translateX(0); box-shadow: 10px 0 30px rgba(0, 0, 0, 0.6); }
+      .hamburger { display: block; }
+      .guest-nav { display: none; }
+      main.content-area { padding: 18px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation -->
+  <header class="site-header">
+    <div style="display:flex;align-items:center;gap:14px">
+      <button class="hamburger" id="nav-toggle" aria-label="Toggle navigation">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+      </button>
+      <a class="brand" href="javascript:void(0)" onclick="navigateHome()">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+        </div>
+        <div class="brand-text">
+          <h1>FRDLY HELPER</h1>
+          <span>On-Demand Local Services</span>
+        </div>
+      </a>
+    </div>
+
+    <!-- Header Actions / User Profile -->
+    <div class="header-actions" id="header-user">
+      <!-- Populated dynamically via JS -->
+    </div>
+  </header>
+
+  <!-- Low Network / Offline Bar -->
+  <div id="offline-bar">
+    ⚡ Offline Mode — Showing cached data. Any pending bookings will sync once reconnected.
+  </div>
+
+  <!-- Main View Container -->
+  <div id="main-root">
+    <!-- Populated by App Controller -->
+  </div>
+
+  <!-- Reusable Modal Container -->
+  <div class="modal-overlay" id="modal-container">
+    <div class="modal" id="modal-body"></div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast">
+    <span id="toast-icon">✨</span>
+    <span id="toast-msg">Operation completed</span>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script>
+    /* ========================================================
+       FRDLY HELPER - Client Application Controller
+       ======================================================== */
+    const $ = s => document.querySelector(s);
+    const $$ = s => document.querySelectorAll(s);
+
+    let me = null;
+    let categories = [];
+    let bookings = [];
+    let adminStats = null;
+    let adminUsers = [];
+    let activeTab = 'dashboard';
+    let pollInterval = null;
+    let mapInstance = null;
+    let lastSig = '';
+
+    const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+    // Toast Notification helper
+    function toast(msg, icon = '✨') {
+      const t = $('#toast');
+      $('#toast-msg').textContent = msg;
+      $('#toast-icon').textContent = icon;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 3200);
+    }
+
+    // Generic API helper
+    async function api(path, method = 'GET', body = null) {
+      const opts = {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin'
+      };
+      if (body) opts.body = JSON.stringify(body);
+      const res = await fetch('/api/' + path, opts);
+      let data = {};
+      try { data = await res.json(); } catch {}
+      if (!res.ok) {
+        const err = new Error(data.error || res.statusText || 'Request failed');
+        err.status = res.status;
+        throw err;
+      }
+      return data;
+    }
+
+    // Modal Helpers
+    function openModal(html) {
+      $('#modal-body').innerHTML = html;
+      $('#modal-container').classList.add('open');
+    }
+    function closeModal() {
+      $('#modal-container').classList.remove('open');
+      $('#modal-body').innerHTML = '';
+      if (mapInstance) { try { mapInstance.remove(); } catch(e){} mapInstance = null; }
+    }
+    $('#modal-container').onclick = e => {
+      if (e.target.id === 'modal-container') closeModal();
+    };
+
+    // Geolocation Helper
+    function getDeviceCoords() {
+      return new Promise((resolve, reject) => {
+        if (!navigator.geolocation) return reject(new Error('Geolocation is not supported by your browser'));
+        navigator.geolocation.getCurrentPosition(
+          pos => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+          err => reject(new Error('Location access denied: ' + err.message)),
+          { enableHighAccuracy: true, timeout: 10000 }
+        );
+      });
+    }
+
+    // Offline / Online Detection
+    window.addEventListener('online', () => {
+      $('#offline-bar').style.display = 'none';
+      toast('Back online! Syncing...', '🌐');
+      poll(true);
+    });
+    window.addEventListener('offline', () => {
+      $('#offline-bar').style.display = 'block';
+      toast('Connection lost. Offline mode active.', '⚠️');
+    });
+
+    /* ========================================================
+       BOOTSTRAP & ROUTING
+       ======================================================== */
+    async function boot() {
+      clearInterval(pollInterval);
+      try {
+        me = await api('me');
+      } catch (e) {
+        me = null;
+      }
+
+      try {
+        categories = await api('categories');
+      } catch (e) {
+        categories = [
+          "Vehicle Mechanic", "Electrician", "Plumber", "Vehicle Towing",
+          "Water Supplier", "Medical Shop", "Appliance Repair", "Other"
+        ];
+      }
+
+      renderHeader();
+
+      if (!me) {
+        renderAuthView('login');
+      } else {
+        renderDashboardShell();
+        poll(true);
+        pollInterval = setInterval(poll, 4000);
+      }
+    }
+
+    function navigateHome() {
+      if (!me) renderAuthView('login');
+      else switchTab('dashboard');
+    }
+
+    function renderHeader() {
+      const container = $('#header-user');
+      if (!me) {
+        container.innerHTML = `
+          <div class="guest-nav">
+            <a href="javascript:void(0)" onclick="renderAuthView('login')">Home</a>
+            <a href="javascript:void(0)" onclick="renderAuthView('login')">Services</a>
+            <a href="javascript:void(0)" onclick="renderAuthView('login')">How It Works</a>
+          </div>
+          <button class="btn" onclick="renderAuthView('register')">Get Started</button>
+        `;
+      } else {
+        const initials = me.name ? me.name.charAt(0).toUpperCase() : 'U';
+        container.innerHTML = `
+          <div class="user-pill">
+            <div class="user-avatar">${initials}</div>
+            <div style="line-height:1.2">
+              <div style="font-weight:700">${esc(me.name)}</div>
+              <span class="role-badge ${me.role}">${esc(me.role)}</span>
+            </div>
+          </div>
+          <button class="ghost" onclick="handleLogout()" title="Logout" style="padding:8px 12px">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
+          </button>
+        `;
+      }
+
+      const navBtn = $('#nav-toggle');
+      if (navBtn) {
+        navBtn.onclick = () => {
+          const sb = $('aside.sidebar');
+          if (sb) sb.classList.toggle('open');
+        };
+      }
+    }
+
+    async function handleLogout() {
+      try { await api('logout', 'POST'); } catch {}
+      me = null;
+      boot();
+    }
+
+    /* ========================================================
+       AUTH SCREEN (Login & Register - matching Screen 1)
+       ======================================================== */
+    function renderAuthView(initialTab = 'login') {
+      const root = $('#main-root');
+      root.innerHTML = `
+        <div style="max-width:1160px;margin:36px auto;padding:0 20px;display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:48px;align-items:center;">
+          
+          <!-- Left Hero Section -->
+          <div>
+            <div style="display:inline-flex;align-items:center;gap:8px;padding:6px 14px;background:rgba(121,82,252,0.15);border:1px solid rgba(121,82,252,0.3);border-radius:99px;font-size:0.85rem;color:var(--cyan);font-weight:700;margin-bottom:18px;">
+              ⚡ REAL-TIME SERVICE PLATFORM
+            </div>
+            <h1 style="font-size:3rem;line-height:1.15;font-weight:800;margin:0 0 16px;background:linear-gradient(135deg, #FFFFFF 0%, #A5B4FC 50%, #00D2FF 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">
+              Get Local Help Anytime, Anywhere
+            </h1>
+            <p style="font-size:1.1rem;color:var(--text-muted);margin:0 0 28px;max-width:480px;">
+              Find verified professionals for your vehicle breakdown, electrical fault, plumbing, towing, and daily emergency needs in real time.
+            </p>
+
+            <!-- Quick Service Pills -->
+            <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:32px;">
+              <div class="user-pill"><span style="font-size:1.2rem">🔧</span> Mechanic</div>
+              <div class="user-pill"><span style="font-size:1.2rem">⚡</span> Electrician</div>
+              <div class="user-pill"><span style="font-size:1.2rem">🚰</span> Plumber</div>
+              <div class="user-pill"><span style="font-size:1.2rem">🚚</span> Towing</div>
+              <div class="user-pill"><span style="font-size:1.2rem">💧</span> Water</div>
+              <div class="user-pill" style="border-color:var(--cyan);color:var(--cyan)">+ 3 More</div>
+            </div>
+
+            <!-- Demo Login Shortcut Box -->
+            <div style="background:rgba(13,21,45,0.6);border:1px solid var(--border);border-radius:14px;padding:16px;max-width:480px;">
+              <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:8px;font-weight:600">⚡ QUICK DEMO LOGINS</div>
+              <div style="display:flex;gap:10px;flex-wrap:wrap">
+                <button class="ghost" style="font-size:0.82rem;padding:6px 12px" onclick="fillAndLogin('admin@example.com','change-me-too')">👑 Admin</button>
+                <button class="ghost" style="font-size:0.82rem;padding:6px 12px" onclick="fillAndLogin('customer@example.com','password123')">👤 Customer</button>
+                <button class="ghost" style="font-size:0.82rem;padding:6px 12px" onclick="fillAndLogin('provider@example.com','password123')">🛠️ Provider</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Glassmorphic Card (Login / Register Tabs) -->
+          <div class="card card-glass" style="box-shadow:0 20px 50px rgba(0,0,0,0.6),0 0 30px rgba(121,82,252,0.25);border-color:rgba(121,82,252,0.35);">
+            <!-- Tab Switcher -->
+            <div style="display:flex;background:#080E21;border-radius:12px;padding:4px;margin-bottom:24px;border:1px solid var(--border);">
+              <button id="tab-btn-login" class="ghost" style="flex:1;border:0;border-radius:9px;box-shadow:none" onclick="toggleAuthTab('login')">Login</button>
+              <button id="tab-btn-reg" class="ghost" style="flex:1;border:0;border-radius:9px;box-shadow:none" onclick="toggleAuthTab('register')">Register</button>
+            </div>
+
+            <!-- Login Form -->
+            <form id="form-login" onsubmit="handleLoginSubmit(event)" style="display:none">
+              <div style="margin-bottom:14px">
+                <label>Email Address</label>
+                <input id="l-email" type="email" placeholder="name@example.com" required>
+              </div>
+              <div style="margin-bottom:14px;position:relative">
+                <label>Password</label>
+                <input id="l-pass" type="password" placeholder="••••••••" required>
+                <button type="button" class="ghost" onclick="togglePassVisibility('l-pass', this)" style="position:absolute;right:8px;bottom:4px;padding:6px;border:0;background:transparent;box-shadow:none;color:var(--text-muted)">
+                  👁️
+                </button>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;font-size:0.85rem;margin-bottom:20px">
+                <label style="display:flex;align-items:center;gap:6px;margin:0;cursor:pointer">
+                  <input type="checkbox" id="l-rem" style="width:auto;margin:0"> Remember me
+                </label>
+                <a href="javascript:void(0)" onclick="toast('Password reset instruction sent to your registered email','📧')" style="color:var(--cyan);text-decoration:none">Forgot password?</a>
+              </div>
+              <button type="submit" class="btn" style="width:100%;padding:12px">Sign In to Dashboard →</button>
+            </form>
+
+            <!-- Register Form -->
+            <form id="form-register" onsubmit="handleRegisterSubmit(event)" style="display:none">
+              <div style="margin-bottom:12px">
+                <label>Full Name</label>
+                <input id="r-name" placeholder="John Doe" required>
+              </div>
+              <div style="margin-bottom:12px">
+                <label>Email Address</label>
+                <input id="r-email" type="email" placeholder="john@example.com" required>
+              </div>
+              <div style="margin-bottom:12px;position:relative">
+                <label>Password (8+ chars)</label>
+                <input id="r-pass" type="password" placeholder="••••••••" required minlength="8">
+                <button type="button" class="ghost" onclick="togglePassVisibility('r-pass', this)" style="position:absolute;right:8px;bottom:4px;padding:6px;border:0;background:transparent;box-shadow:none;color:var(--text-muted)">
+                  👁️
+                </button>
+              </div>
+              <div style="margin-bottom:12px">
+                <label>Phone Number</label>
+                <input id="r-phone" placeholder="9876543210" required>
+              </div>
+              <div style="margin-bottom:12px">
+                <label>Account Role</label>
+                <select id="r-role" onchange="toggleRoleFields(this.value)">
+                  <option value="customer">Customer (Looking for services)</option>
+                  <option value="provider">Service Provider (Offering services)</option>
+                </select>
+              </div>
+
+              <!-- Provider Details (Conditional) -->
+              <div id="provider-fields" style="display:none;background:rgba(0,0,0,0.25);border:1px dashed var(--border);border-radius:10px;padding:12px;margin-bottom:14px">
+                <div style="margin-bottom:10px">
+                  <label>Primary Service Category</label>
+                  <select id="r-cat">
+                    ${categories.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('')}
+                  </select>
+                </div>
+                <div>
+                  <label>Skills & Service Area Details</label>
+                  <input id="r-skills" placeholder="e.g. 5+ yrs experience, emergency plumbing">
+                </div>
+              </div>
+
+              <button type="submit" class="btn" style="width:100%;padding:12px">Create Account →</button>
+            </form>
+          </div>
+        </div>
+      `;
+
+      toggleAuthTab(initialTab);
+    }
+
+    function toggleAuthTab(tab) {
+      const loginBtn = $('#tab-btn-login');
+      const regBtn = $('#tab-btn-reg');
+      const loginForm = $('#form-login');
+      const regForm = $('#form-register');
+
+      if (tab === 'login') {
+        loginBtn.style.background = 'var(--gradient-btn)';
+        loginBtn.style.color = '#fff';
+        regBtn.style.background = 'transparent';
+        regBtn.style.color = 'var(--text-muted)';
+        loginForm.style.display = 'block';
+        regForm.style.display = 'none';
+      } else {
+        regBtn.style.background = 'var(--gradient-btn)';
+        regBtn.style.color = '#fff';
+        loginBtn.style.background = 'transparent';
+        loginBtn.style.color = 'var(--text-muted)';
+        regForm.style.display = 'block';
+        loginForm.style.display = 'none';
+      }
+    }
+
+    function togglePassVisibility(id, btn) {
+      const inp = document.getElementById(id);
+      if (inp.type === 'password') {
+        inp.type = 'text';
+        btn.textContent = '🔒';
+      } else {
+        inp.type = 'password';
+        btn.textContent = '👁️';
+      }
+    }
+
+    function toggleRoleFields(role) {
+      $('#provider-fields').style.display = role === 'provider' ? 'block' : 'none';
+    }
+
+    async function handleLoginSubmit(e) {
+      e.preventDefault();
+      const email = $('#l-email').value;
+      const password = $('#l-pass').value;
+      try {
+        await api('login', 'POST', { email, password });
+        toast('Welcome back!', '👋');
+        boot();
+      } catch (err) {
+        toast(err.message, '❌');
+      }
+    }
+
+    async function handleRegisterSubmit(e) {
+      e.preventDefault();
+      const role = $('#r-role').value;
+      const payload = {
+        name: $('#r-name').value,
+        email: $('#r-email').value,
+        password: $('#r-pass').value,
+        phone: $('#r-phone').value,
+        role
+      };
+      if (role === 'provider') {
+        payload.category = $('#r-cat').value;
+        payload.skills = $('#r-skills').value;
+      }
+      try {
+        await api('register', 'POST', payload);
+        await api('login', 'POST', { email: payload.email, password: payload.password });
+        toast('Account created successfully!', '🎉');
+        boot();
+      } catch (err) {
+        toast(err.message, '❌');
+      }
+    }
+
+    async function fillAndLogin(email, password) {
+      try {
+        await api('login', 'POST', { email, password });
+        toast('Logged in as ' + email, '⚡');
+        boot();
+      } catch (err) {
+        // If not found, attempt registering the demo account
+        if (email.includes('customer')) {
+          await api('register', 'POST', { name: 'Demo Customer', email, password, phone: '9988776655', role: 'customer' }).catch(()=>{});
+        } else if (email.includes('provider')) {
+          await api('register', 'POST', { name: 'Demo Plumber', email, password, phone: '9988776644', role: 'provider', category: 'Plumber', skills: 'Expert plumbing' }).catch(()=>{});
+        }
+        await api('login', 'POST', { email, password }).catch(() => toast(err.message, '❌'));
+        boot();
+      }
+    }
+
+    /* ========================================================
+       DASHBOARD SHELL & SIDEBAR (Role-specific)
+       ======================================================== */
+    function renderDashboardShell() {
+      const root = $('#main-root');
+      root.innerHTML = `
+        <div class="app-shell">
+          <!-- Sidebar -->
+          <aside class="sidebar">
+            <div style="padding:12px;margin-bottom:12px;background:rgba(255,255,255,0.03);border-radius:12px;border:1px solid var(--border)">
+              <div style="font-size:0.75rem;color:var(--text-muted);font-weight:600">SIGNED IN AS</div>
+              <div style="font-weight:700;font-size:0.95rem;margin:2px 0">${esc(me.name)}</div>
+              <span class="role-badge ${me.role}">${esc(me.role)}</span>
+            </div>
+
+            <div class="nav-label">Navigation</div>
+            <div id="sidebar-links"></div>
+
+            <div class="sidebar-footer">
+              <button class="nav-item" onclick="handleLogout()" style="color:var(--coral)">
+                <svg viewBox="0 0 24 24"><path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/></svg>
+                <span>Logout</span>
+              </button>
+            </div>
+          </aside>
+
+          <!-- Main View -->
+          <main class="content-area" id="view-container">
+            <!-- Rendered by active tab -->
+          </main>
+        </div>
+      `;
+
+      renderSidebarLinks();
+      renderCurrentTab();
+    }
+
+    function renderSidebarLinks() {
+      const container = $('#sidebar-links');
+      if (!container) return;
+      let links = [];
+
+      if (me.role === 'customer') {
+        links = [
+          { id: 'dashboard', label: 'Dashboard', icon: '<path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/>' },
+          { id: 'book', label: 'Book a Service', icon: '<path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/>' },
+          { id: 'requests', label: 'My Requests', icon: '<path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>' },
+          { id: 'profile', label: 'Profile', icon: '<path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>' }
+        ];
+      } else if (me.role === 'provider') {
+        const activeCount = bookings.filter(b => ['accepted', 'on_the_way', 'arrived', 'estimate_submitted', 'estimate_approved', 'in_progress', 'awaiting_confirmation'].includes(b.status)).length;
+        const reqCount = bookings.filter(b => b.status === 'requested').length;
+
+        links = [
+          { id: 'dashboard', label: 'Dashboard', icon: '<path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/>' },
+          { id: 'incoming', label: 'Incoming Requests', icon: '<path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14l-5-5 1.41-1.41L12 14.17l5.59-5.59L19 10l-7 7z"/>', badge: reqCount || null },
+          { id: 'active', label: 'Active Services', icon: '<path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>', badge: activeCount || null },
+          { id: 'profile', label: 'Profile & Skills', icon: '<path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>' }
+        ];
+      } else if (me.role === 'admin') {
+        links = [
+          { id: 'dashboard', label: 'Dashboard Overview', icon: '<path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/>' },
+          { id: 'users', label: 'User Management', icon: '<path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>' },
+          { id: 'all_bookings', label: 'All Service Bookings', icon: '<path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm2 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/>' }
+        ];
+      }
+
+      container.innerHTML = links.map(l => `
+        <button class="nav-item ${activeTab === l.id ? 'active' : ''}" onclick="switchTab('${l.id}')">
+          <svg viewBox="0 0 24 24">${l.icon}</svg>
+          <span>${esc(l.label)}</span>
+          ${l.badge ? `<span class="badge">${l.badge}</span>` : ''}
+        </button>
+      `).join('');
+    }
+
+    function switchTab(tabId) {
+      activeTab = tabId;
+      renderSidebarLinks();
+      renderCurrentTab();
+      const sb = $('aside.sidebar');
+      if (sb) sb.classList.remove('open');
+    }
+
+    function renderCurrentTab() {
+      const container = $('#view-container');
+      if (!container) return;
+
+      if (me.role === 'customer') {
+        if (activeTab === 'dashboard') renderCustomerDashboard(container);
+        else if (activeTab === 'book') renderBookingWizard(container);
+        else if (activeTab === 'requests') renderCustomerRequests(container);
+        else if (activeTab === 'profile') renderProfileView(container);
+      } else if (me.role === 'provider') {
+        if (activeTab === 'dashboard') renderProviderDashboard(container);
+        else if (activeTab === 'incoming') renderProviderIncoming(container);
+        else if (activeTab === 'active') renderProviderActive(container);
+        else if (activeTab === 'profile') renderProfileView(container);
+      } else if (me.role === 'admin') {
+        if (activeTab === 'dashboard') renderAdminDashboard(container);
+        else if (activeTab === 'users') renderAdminUsers(container);
+        else if (activeTab === 'all_bookings') renderAdminBookings(container);
+      }
+    }
+
+    /* ========================================================
+       CUSTOMER VIEWS (Dashboard, Booking, Requests)
+       ======================================================== */
+    function renderCustomerDashboard(container) {
+      const activeBookings = bookings.filter(b => b.status !== 'completed' && b.status !== 'cancelled' && b.status !== 'rejected');
+      
+      const catIcons = {
+        'Vehicle Mechanic': '🔧',
+        'Electrician': '⚡',
+        'Plumber': '🚰',
+        'Vehicle Towing': '🚚',
+        'Water Supplier': '💧',
+        'Medical Shop': '💊',
+        'Appliance Repair': '🛠️',
+        'Other': '📦'
+      };
+
+      container.innerHTML = `
+        <div style="margin-bottom:28px">
+          <h2 style="font-size:1.8rem;margin:0 0 6px;font-weight:800">
+            Welcome Back, ${esc(me.name)} 👋
+          </h2>
+          <p style="color:var(--text-muted);margin:0">What do you need help with today? Select a category or request emergency assistance.</p>
+        </div>
+
+        <!-- Search Bar -->
+        <div style="position:relative;margin-bottom:28px">
+          <input id="service-search" placeholder="Search for a service (e.g., Plumber, Mechanic, Electrician)..." 
+                 oninput="filterCategories(this.value)" 
+                 style="padding:14px 20px;font-size:1rem;border-radius:14px;background:var(--bg-card);border:1px solid var(--border)">
+        </div>
+
+        <!-- Service Categories Grid (matching Screen 2) -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <h3 style="margin:0;font-size:1.15rem">Select Service Category</h3>
+          <span style="font-size:0.85rem;color:var(--cyan)">${categories.length} services available</span>
+        </div>
+        <div class="grid-4" id="categories-grid" style="margin-bottom:32px">
+          ${categories.map(c => `
+            <div class="category-card" onclick="startBookingCategory('${esc(c)}')">
+              <div class="category-icon">${catIcons[c] || '🛠️'}</div>
+              <div class="category-title">${esc(c)}</div>
+              <div class="category-sub">Instant On-Demand</div>
+            </div>
+          `).join('')}
+        </div>
+
+        <!-- Active / Recent Bookings Summary -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <h3 style="margin:0;font-size:1.15rem">Recent &amp; Active Requests</h3>
+          <button class="ghost" style="padding:4px 10px;font-size:0.82rem" onclick="switchTab('requests')">View All (${bookings.length})</button>
+        </div>
+
+        <div id="customer-active-list">
+          ${activeBookings.length ? activeBookings.map(renderBookingCardCustomer).join('') : `
+            <div class="card" style="text-align:center;padding:36px;color:var(--text-muted)">
+              <div style="font-size:2.5rem;margin-bottom:10px">🛵</div>
+              <div style="font-size:1.1rem;font-weight:600;color:var(--text)">No active service requests</div>
+              <p style="margin:6px 0 16px">Need urgent repairs or help? Pick a category above to request service.</p>
+              <button onclick="switchTab('book')">Request a Service Now</button>
+            </div>
+          `}
+        </div>
+      `;
+    }
+
+    function filterCategories(q) {
+      const query = q.toLowerCase();
+      $$('#categories-grid .category-card').forEach(card => {
+        const text = card.textContent.toLowerCase();
+        card.style.display = text.includes(query) ? 'flex' : 'none';
+      });
+    }
+
+    function startBookingCategory(cat) {
+      window.selectedBookingCategory = cat;
+      switchTab('book');
+    }
+
+    /* Multi-step Booking Experience (Screen 3) */
+    function renderBookingWizard(container) {
+      const selectedCat = window.selectedBookingCategory || categories[0] || 'Plumber';
+
+      container.innerHTML = `
+        <div style="max-width:760px;margin:0 auto">
+          <div style="margin-bottom:20px">
+            <h2 style="font-size:1.8rem;margin:0 0 6px;font-weight:800">Book a Service</h2>
+            <p style="color:var(--text-muted);margin:0">Complete the details below to dispatch a nearby verified specialist.</p>
+          </div>
+
+          <!-- 4-step Stepper Indicator -->
+          <div class="stepper" id="booking-stepper">
+            <div class="step-node active" id="snode-1"><div class="step-circle">1</div><div class="step-name">Service</div></div>
+            <div class="step-node" id="snode-2"><div class="step-circle">2</div><div class="step-name">Details</div></div>
+            <div class="step-node" id="snode-3"><div class="step-circle">3</div><div class="step-name">Location</div></div>
+            <div class="step-node" id="snode-4"><div class="step-circle">4</div><div class="step-name">Confirm</div></div>
+          </div>
+
+          <div class="card card-glass" style="margin-top:24px">
+            <!-- Step 1: Category Selection -->
+            <div id="step-pane-1">
+              <h3 style="margin:0 0 16px">Step 1: Select Service Category</h3>
+              <div class="grid-3" style="margin-bottom:24px">
+                ${categories.map(c => `
+                  <div class="category-card ${c === selectedCat ? 'active' : ''}" onclick="selectWizardCat('${esc(c)}', this)">
+                    <div class="category-title" style="font-size:1rem">${esc(c)}</div>
+                  </div>
+                `).join('')}
+              </div>
+              <input type="hidden" id="wiz-cat" value="${esc(selectedCat)}">
+              <div style="display:flex;justify-content:flex-end">
+                <button onclick="gotoWizardStep(2)">Next: Problem Details →</button>
+              </div>
+            </div>
+
+            <!-- Step 2: Problem Details & Emergency -->
+            <div id="step-pane-2" style="display:none">
+              <h3 style="margin:0 0 16px">Step 2: Describe the Problem</h3>
+              <div style="margin-bottom:16px">
+                <label>Issue Description</label>
+                <textarea id="wiz-desc" rows="4" placeholder="Describe what happened, vehicle make, pipe location, symptoms, etc." required></textarea>
+              </div>
+              <div style="background:rgba(255,71,87,0.1);border:1px solid rgba(255,71,87,0.3);border-radius:12px;padding:14px;margin-bottom:24px;display:flex;align-items:center;gap:12px">
+                <input type="checkbox" id="wiz-emg" style="width:auto;margin:0;transform:scale(1.2)">
+                <div>
+                  <div style="font-weight:700;color:var(--coral)">Emergency Priority Request</div>
+                  <div style="font-size:0.8rem;color:var(--text-muted)">Marks this request with high urgency for expedited arrival.</div>
+                </div>
+              </div>
+              <div style="display:flex;justify-content:space-between">
+                <button class="ghost" onclick="gotoWizardStep(1)">← Back</button>
+                <button onclick="validateStep2AndNext()">Next: Set Location →</button>
+              </div>
+            </div>
+
+            <!-- Step 3: Location -->
+            <div id="step-pane-3" style="display:none">
+              <h3 style="margin:0 0 16px">Step 3: Service Location</h3>
+              <p style="color:var(--text-muted);font-size:0.88rem;margin:0 0 14px">
+                Ensure coordinates are accurate so the technician can navigate directly to your location.
+              </p>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+                <div>
+                  <label>Latitude</label>
+                  <input id="wiz-lat" type="number" step="any" placeholder="11.0168" value="11.0168" required>
+                </div>
+                <div>
+                  <label>Longitude</label>
+                  <input id="wiz-lng" type="number" step="any" placeholder="76.9558" value="76.9558" required>
+                </div>
+              </div>
+              <div style="margin-bottom:24px">
+                <button type="button" class="ghost" onclick="detectWizardGPS(this)" style="width:100%">
+                  📍 Detect My Current GPS Location
+                </button>
+              </div>
+              <div style="display:flex;justify-content:space-between">
+                <button class="ghost" onclick="gotoWizardStep(2)">← Back</button>
+                <button onclick="validateStep3AndNext()">Next: Review &amp; Providers →</button>
+              </div>
+            </div>
+
+            <!-- Step 4: Review, Available Providers & Confirm -->
+            <div id="step-pane-4" style="display:none">
+              <h3 style="margin:0 0 16px">Step 4: Confirm &amp; Choose Provider</h3>
+              <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:20px">
+                <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+                  <span style="color:var(--text-muted)">Category:</span>
+                  <b id="rev-cat" style="color:var(--cyan)">-</b>
+                </div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+                  <span style="color:var(--text-muted)">Location:</span>
+                  <span id="rev-loc">-</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+                  <span style="color:var(--text-muted)">Priority:</span>
+                  <span id="rev-emg">-</span>
+                </div>
+                <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border)">
+                  <span style="color:var(--text-muted);display:block;margin-bottom:4px">Problem:</span>
+                  <div id="rev-desc" style="font-size:0.9rem"></div>
+                </div>
+              </div>
+
+              <!-- Available Providers List -->
+              <div style="margin-bottom:24px">
+                <div style="font-weight:700;margin-bottom:10px;display:flex;justify-content:space-between">
+                  <span>Available Nearby Specialists</span>
+                  <span id="prov-count" style="font-size:0.85rem;color:var(--cyan)">Searching...</span>
+                </div>
+                <div id="wizard-providers-list" style="display:flex;flex-direction:column;gap:10px"></div>
+              </div>
+
+              <div style="display:flex;justify-content:space-between">
+                <button class="ghost" onclick="gotoWizardStep(3)">← Back</button>
+                <button class="btn success" id="btn-submit-booking" onclick="submitFinalBooking(this)">🚀 Request Service Now</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function selectWizardCat(cat, el) {
+      $('#wiz-cat').value = cat;
+      $$('#step-pane-1 .category-card').forEach(c => c.classList.remove('active'));
+      el.classList.add('active');
+    }
+
+    function gotoWizardStep(s) {
+      for (let i = 1; i <= 4; i++) {
+        $(`#step-pane-${i}`).style.display = i === s ? 'block' : 'none';
+        const node = $(`#snode-${i}`);
+        if (i < s) { node.className = 'step-node completed'; }
+        else if (i === s) { node.className = 'step-node active'; }
+        else { node.className = 'step-node'; }
+      }
+    }
+
+    function validateStep2AndNext() {
+      const desc = $('#wiz-desc').value.trim();
+      if (!desc) return toast('Please enter a description of the issue', '⚠️');
+      gotoWizardStep(3);
+    }
+
+    async function detectWizardGPS(btn) {
+      btn.disabled = true;
+      btn.textContent = 'Detecting GPS...';
+      try {
+        const coords = await getDeviceCoords();
+        $('#wiz-lat').value = coords.lat.toFixed(5);
+        $('#wiz-lng').value = coords.lng.toFixed(5);
+        toast('Location acquired!', '📍');
+      } catch (err) {
+        toast(err.message, '⚠️');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '📍 Detect My Current GPS Location';
+      }
+    }
+
+    async function validateStep3AndNext() {
+      const lat = parseFloat($('#wiz-lat').value);
+      const lng = parseFloat($('#wiz-lng').value);
+      if (isNaN(lat) || isNaN(lng) || lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+        return toast('Please enter valid latitude and longitude', '⚠️');
+      }
+
+      // Populate review pane
+      $('#rev-cat').textContent = $('#wiz-cat').value;
+      $('#rev-loc').textContent = `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+      $('#rev-emg').innerHTML = $('#wiz-emg').checked ? '<span class="tag tag-emergency">EMERGENCY</span>' : 'Standard';
+      $('#rev-desc').textContent = $('#wiz-desc').value;
+
+      gotoWizardStep(4);
+
+      // Search real nearby providers
+      const list = $('#wizard-providers-list');
+      list.innerHTML = `<div style="text-align:center;padding:16px;color:var(--text-muted)">Looking for online providers nearby...</div>`;
+      window.chosenProviderId = null;
+
+      try {
+        const provs = await api(`providers?category=${encodeURIComponent($('#wiz-cat').value)}&lat=${lat}&lng=${lng}`);
+        $('#prov-count').textContent = `${provs.length} available`;
+        if (!provs.length) {
+          list.innerHTML = `
+            <div style="background:rgba(255,255,255,0.02);padding:14px;border-radius:10px;text-align:center;color:var(--text-muted)">
+              No specific provider currently listed online in this area. You can still submit and our nearest available provider will be matched!
+            </div>
+          `;
+        } else {
+          list.innerHTML = provs.map((p, idx) => `
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:var(--bg-card);border:1px solid var(--border);border-radius:10px" id="prov-card-${p.id}">
+              <div>
+                <div style="font-weight:700">${esc(p.name)} <span class="tag tag-accepted">${p.distance_km} km away</span></div>
+                <div style="font-size:0.8rem;color:var(--text-muted);margin-top:2px">${esc(p.skills || 'Professional Technician')} • Score: ${p.score}</div>
+              </div>
+              <button type="button" class="ghost" id="prov-pick-${p.id}" onclick="pickWizardProvider(${p.id})">Select</button>
+            </div>
+          `).join('');
+        }
+      } catch (err) {
+        list.innerHTML = `<div style="color:var(--coral)">Error searching providers: ${esc(err.message)}</div>`;
+      }
+    }
+
+    function pickWizardProvider(id) {
+      window.chosenProviderId = id;
+      $$('[id^="prov-pick-"]').forEach(b => {
+        b.textContent = 'Select';
+        b.classList.add('ghost');
+      });
+      const chosen = $(`#prov-pick-${id}`);
+      if (chosen) {
+        chosen.textContent = '✓ Selected';
+        chosen.classList.remove('ghost');
+      }
+      toast('Provider selected', '👤');
+    }
+
+    async function submitFinalBooking(btn) {
+      btn.disabled = true;
+      btn.textContent = 'Dispatching...';
+
+      const payload = {
+        category: $('#wiz-cat').value,
+        description: $('#wiz-desc').value.trim(),
+        lat: parseFloat($('#wiz-lat').value),
+        lng: parseFloat($('#wiz-lng').value),
+        emergency: $('#wiz-emg').checked,
+        provider_id: window.chosenProviderId,
+        client_ref: crypto.randomUUID ? crypto.randomUUID() : ('ref_' + Date.now())
+      };
+
+      try {
+        await api('bookings', 'POST', payload);
+        toast('Service requested successfully!', '🚀');
+        switchTab('requests');
+      } catch (err) {
+        toast(err.message, '❌');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = '🚀 Request Service Now';
+      }
+    }
+
+    /* Customer Requests List View (Screen 4, Screen 7, Screen 9) */
+    function renderCustomerRequests(container) {
+      container.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;flex-wrap:wrap;gap:12px">
+          <div>
+            <h2 style="font-size:1.8rem;margin:0 0 6px;font-weight:800">My Requests</h2>
+            <p style="color:var(--text-muted);margin:0">Track live progress, approve estimates, and review completed jobs.</p>
+          </div>
+          <button onclick="switchTab('book')">+ New Service Request</button>
+        </div>
+
+        <div id="customer-bookings-list">
+          ${bookings.length ? bookings.map(renderBookingCardCustomer).join('') : `
+            <div class="card" style="text-align:center;padding:48px;color:var(--text-muted)">
+              <div style="font-size:3rem;margin-bottom:12px">📋</div>
+              <h3>No service requests found</h3>
+              <p>You haven't requested any services yet.</p>
+              <button onclick="switchTab('book')">Book a Service</button>
+            </div>
+          `}
+        </div>
+      `;
+    }
+
+    function renderBookingCardCustomer(b) {
+      const e = b.estimate;
+      const st = b.status;
+      const stClean = st.replace(/_/g, ' ');
+
+      // Stepper calculation
+      const stepIdx = ['requested', 'accepted', 'on_the_way', 'arrived', 'estimate_submitted', 'estimate_approved', 'in_progress', 'completed'].indexOf(st);
+      
+      return `
+        <div class="card" style="margin-bottom:18px" id="booking-${b.id}">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:14px">
+            <div>
+              <div style="font-size:1.15rem;font-weight:800">
+                #${b.id} ${esc(b.category)}
+                ${b.emergency ? '<span class="tag tag-emergency">EMERGENCY</span>' : ''}
+              </div>
+              <div style="font-size:0.8rem;color:var(--text-muted);margin-top:2px">
+                Requested at: ${esc(b.created_at)} UTC
+              </div>
+            </div>
+            <span class="tag tag-${st} pulse">${stClean}</span>
+          </div>
+
+          <!-- Description -->
+          <div style="background:rgba(255,255,255,0.02);padding:12px 14px;border-radius:10px;margin-bottom:14px;border:1px solid var(--border)">
+            <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:2px">Problem Description</div>
+            <div style="font-size:0.92rem">${esc(b.description)}</div>
+          </div>
+
+          <!-- Assigned Provider Info -->
+          <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;font-size:0.88rem;color:var(--text-muted);margin-bottom:14px">
+            <div>
+              👤 <b>Provider:</b> ${esc(b.provider_name || 'Awaiting assignment')} 
+              ${b.provider_phone ? `(${esc(b.provider_phone)})` : ''}
+            </div>
+            <div>
+              📍 <b>Location:</b> ${b.lat.toFixed(4)}, ${b.lng.toFixed(4)}
+            </div>
+          </div>
+
+          <!-- Live Tracking Snippet (Screen 4) -->
+          ${b.provider_lat != null && ['accepted', 'on_the_way', 'arrived', 'in_progress'].includes(st) ? `
+            <div style="background:rgba(0,210,255,0.08);border:1px solid rgba(0,210,255,0.3);border-radius:12px;padding:12px 16px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+              <div>
+                <div style="font-weight:700;color:var(--cyan)">🛰️ Live Tracking Active</div>
+                <div style="font-size:0.82rem;color:var(--text-muted)">
+                  Provider at: ${b.provider_lat.toFixed(4)}, ${b.provider_lng.toFixed(4)} • Updated: ${esc(b.provider_loc_at)} UTC
+                </div>
+              </div>
+              <button class="ghost" onclick="openLiveTrackingModal(${b.id}, ${b.lat}, ${b.lng}, ${b.provider_lat}, ${b.provider_lng}, '${esc(b.status)}')">
+                🗺️ View Live Map
+              </button>
+            </div>
+          ` : ''}
+
+          <!-- Estimate Received Breakdown (Screen 7 in Reference Image) -->
+          ${e ? `
+            <div style="background:rgba(121,82,252,0.08);border:1px solid rgba(121,82,252,0.35);border-radius:14px;padding:16px;margin-bottom:16px">
+              <div style="font-weight:800;color:var(--cyan);margin-bottom:10px;display:flex;align-items:center;gap:8px">
+                <span>💰</span> Service Estimate Breakdown
+              </div>
+              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:12px">
+                <div style="background:rgba(0,0,0,0.25);padding:10px;border-radius:8px">
+                  <div style="font-size:0.75rem;color:var(--text-muted)">Labour Charge</div>
+                  <div style="font-weight:700;font-size:1.1rem">₹${Number(e.labour).toFixed(2)}</div>
+                </div>
+                <div style="background:rgba(0,0,0,0.25);padding:10px;border-radius:8px">
+                  <div style="font-size:0.75rem;color:var(--text-muted)">Parts / Materials</div>
+                  <div style="font-weight:700;font-size:1.1rem">₹${Number(e.parts).toFixed(2)}</div>
+                </div>
+                <div style="background:rgba(0,0,0,0.25);padding:10px;border-radius:8px">
+                  <div style="font-size:0.75rem;color:var(--text-muted)">Additional Charge</div>
+                  <div style="font-weight:700;font-size:1.1rem">₹${Number(e.extra).toFixed(2)}</div>
+                </div>
+                <div style="background:rgba(0,229,153,0.12);border:1px solid rgba(0,229,153,0.4);padding:10px;border-radius:8px">
+                  <div style="font-size:0.75rem;color:var(--mint);font-weight:700">Total Estimated Charge</div>
+                  <div style="font-weight:800;font-size:1.2rem;color:var(--mint)">₹${Number(e.total).toFixed(2)}</div>
+                </div>
+              </div>
+              ${e.note ? `
+                <div style="font-size:0.85rem;color:var(--text-muted);border-top:1px solid rgba(255,255,255,0.06);padding-top:8px">
+                  <b>Work Description / Note:</b> ${esc(e.note)}
+                </div>
+              ` : ''}
+            </div>
+          ` : ''}
+
+          <!-- Review Display (If reviewed) -->
+          ${b.review ? `
+            <div style="background:rgba(255,184,0,0.08);border:1px solid rgba(255,184,0,0.3);border-radius:10px;padding:12px 14px;margin-bottom:14px">
+              <div style="font-weight:700;color:var(--amber);margin-bottom:4px">
+                ⭐ Rated ${b.review.rating}/5 Stars
+              </div>
+              <div style="font-size:0.88rem;color:var(--text)">"${esc(b.review.comment || 'No written comment')}"</div>
+            </div>
+          ` : ''}
+
+          <!-- Actions Toolbar -->
+          <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:flex-end">
+            ${['requested', 'accepted'].includes(st) ? `
+              <button class="danger" onclick="triggerBookingAction(${b.id}, 'cancel')">Cancel Request</button>
+            ` : ''}
+
+            ${st === 'estimate_submitted' ? `
+              <button class="danger" onclick="triggerBookingAction(${b.id}, 'decline')">✕ Reject Estimate</button>
+              <button class="success" onclick="triggerBookingAction(${b.id}, 'approve')">✓ Approve &amp; Continue</button>
+            ` : ''}
+
+            ${st === 'awaiting_confirmation' ? `
+              <button class="success" onclick="triggerBookingAction(${b.id}, 'confirm')">Confirm Service Completion</button>
+            ` : ''}
+
+            ${st === 'completed' && !b.review ? `
+              <button class="btn" onclick="openReviewModal(${b.id}, '${esc(b.provider_name || 'Technician')}')">⭐ Rate Your Service</button>
+            ` : ''}
+          </div>
+        </div>
+      `;
+    }
+
+    async function triggerBookingAction(bid, action) {
+      if (!confirm(`Are you sure you want to ${action} this request?`)) return;
+      try {
+        await api(`bookings/${bid}/action`, 'POST', { action });
+        toast(`Action '${action}' successful!`, '✓');
+        poll(true);
+      } catch (err) {
+        toast(err.message, '❌');
+      }
+    }
+
+    /* Interactive Live Tracking Map Modal (Screen 4) */
+    function openLiveTrackingModal(bid, cLat, cLng, pLat, pLng, status) {
+      openModal(`
+        <div class="modal-header">
+          <h3>🛰️ Live Service Tracking — #${bid}</h3>
+          <button class="modal-close" onclick="closeModal()">✕</button>
+        </div>
+        <div style="margin-bottom:12px;font-size:0.9rem;display:flex;justify-content:space-between">
+          <span>Status: <b style="color:var(--cyan);text-transform:capitalize">${status.replace(/_/g, ' ')}</b></span>
+          <a style="color:var(--cyan);text-decoration:none" target="_blank" rel="noopener" 
+             href="https://www.openstreetmap.org/directions?engine=fossgis_osrm_car&route=${pLat}%2C${pLng}%3B${cLat}%2C${cLng}">
+            Open External Navigation ↗
+          </a>
+        </div>
+        <div id="live-map-canvas" class="map-box"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px;font-size:0.85rem">
+          <div style="background:rgba(255,255,255,0.03);padding:10px;border-radius:8px">
+            <b>📍 Customer Location:</b> ${cLat.toFixed(5)}, ${cLng.toFixed(5)}
+          </div>
+          <div style="background:rgba(255,255,255,0.03);padding:10px;border-radius:8px">
+            <b>🛵 Provider Location:</b> ${pLat.toFixed(5)}, ${pLng.toFixed(5)}
+          </div>
+        </div>
+      `);
+
+      setTimeout(() => {
+        try {
+          if (window.L) {
+            const map = L.map('live-map-canvas').setView([cLat, cLng], 14);
+            mapInstance = map;
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+              attribution: '© OpenStreetMap contributors',
+              maxZoom: 19
+            }).addTo(map);
+
+            L.marker([cLat, cLng]).addTo(map).bindPopup('Customer Location').openPopup();
+            L.marker([pLat, pLng]).addTo(map).bindPopup('Service Provider');
+            
+            const group = new L.featureGroup([L.marker([cLat, cLng]), L.marker([pLat, pLng])]);
+            map.fitBounds(group.getBounds().pad(0.2));
+          } else {
+            $('#live-map-canvas').innerHTML = `
+              <div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-muted);flex-direction:column;gap:8px">
+                <div style="font-size:2rem">🗺️</div>
+                <div>Map coordinates: Customer (${cLat.toFixed(4)}, ${cLng.toFixed(4)}) ↔ Provider (${pLat.toFixed(4)}, ${pLng.toFixed(4)})</div>
+                <a class="btn" target="_blank" rel="noopener" href="https://www.openstreetmap.org/?mlat=${pLat}&mlon=${pLng}#map=16/${pLat}/${pLng}">View on OpenStreetMap</a>
+              </div>
+            `;
+          }
+        } catch (e) {
+          console.error(e);
+        }
+      }, 150);
+    }
+
+    /* Review Submission Modal (Screen 9) */
+    function openReviewModal(bid, provName) {
+      window.activeReviewRating = 5;
+      openModal(`
+        <div style="text-align:center;padding:12px">
+          <div style="font-size:3rem;margin-bottom:8px">🎉</div>
+          <h2 style="font-size:1.6rem;margin:0 0 6px;font-weight:800">Service Completed!</h2>
+          <p style="color:var(--text-muted);margin:0 0 20px">How was your service experience with <b>${esc(provName)}</b>?</p>
+
+          <div style="display:flex;justify-content:center;margin-bottom:20px" class="stars" id="star-box">
+            ${[1, 2, 3, 4, 5].map(n => `
+              <button type="button" class="star-btn ${n <= 5 ? 'on' : ''}" data-star="${n}" onclick="setReviewRating(${n})">★</button>
+            `).join('')}
+          </div>
+
+          <div style="margin-bottom:20px;text-align:left">
+            <label>Share your feedback (optional)</label>
+            <textarea id="review-comment" rows="3" placeholder="Great service, on time and polite..."></textarea>
+          </div>
+
+          <div style="display:flex;gap:12px;justify-content:flex-end">
+            <button class="ghost" onclick="closeModal()">Cancel</button>
+            <button class="btn" onclick="submitReview(${bid})">Submit Review →</button>
+          </div>
+        </div>
+      `);
+    }
+
+    function setReviewRating(r) {
+      window.activeReviewRating = r;
+      $$('#star-box .star-btn').forEach(btn => {
+        const val = parseInt(btn.dataset.star);
+        btn.classList.toggle('on', val <= r);
+      });
+    }
+
+    async function submitReview(bid) {
+      const comment = $('#review-comment').value.trim();
+      const rating = window.activeReviewRating || 5;
+      try {
+        await api(`bookings/${bid}/review`, 'POST', { rating, comment });
+        toast('Review submitted! Thank you.', '⭐');
+        closeModal();
+        poll(true);
+      } catch (err) {
+        toast(err.message, '❌');
+      }
+    }
+
+    /* ========================================================
+       PROVIDER VIEWS (Screen 5, Screen 6)
+       ======================================================== */
+    function renderProviderDashboard(container) {
+      const p = me.provider || {};
+      const completed = bookings.filter(b => b.status === 'completed');
+      const active = bookings.filter(b => ['accepted', 'on_the_way', 'arrived', 'estimate_submitted', 'estimate_approved', 'in_progress', 'awaiting_confirmation'].includes(b.status));
+      const incoming = bookings.filter(b => b.status === 'requested');
+
+      // Real earnings calculated from actual database completed estimates
+      const totalEarnings = completed.reduce((sum, b) => sum + (b.estimate?.total || 0), 0);
+
+      container.innerHTML = `
+        <div style="margin-bottom:28px;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px">
+          <div>
+            <h2 style="font-size:1.8rem;margin:0 0 6px;font-weight:800">
+              Provider Dashboard — ${esc(p.category || 'Specialist')}
+            </h2>
+            <p style="color:var(--text-muted);margin:0">Manage your active service calls, live status, and incoming customer requests.</p>
+          </div>
+
+          <!-- Availability Toggle -->
+          <div class="card card-glass" style="display:flex;align-items:center;gap:14px;padding:12px 18px">
+            <div>
+              <div style="font-weight:700;font-size:0.95rem" id="avail-status-label">
+                ${p.available ? '<span style="color:var(--mint)">● Online &amp; Available</span>' : '<span style="color:var(--coral)">○ Offline</span>'}
+              </div>
+              <div style="font-size:0.75rem;color:var(--text-muted)">Toggle availability for requests</div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="provider-avail-toggle" ${p.available ? 'checked' : ''} onchange="toggleProviderAvailability(this.checked)">
+              <span class="slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- 4 Metric Cards (Screen 5) -->
+        <div class="grid-4" style="margin-bottom:28px">
+          <div class="card">
+            <div style="font-size:0.8rem;color:var(--text-muted);text-transform:uppercase;font-weight:700">New Requests</div>
+            <div style="font-size:1.8rem;font-weight:800;color:var(--primary);margin:6px 0">${incoming.length}</div>
+            <div style="font-size:0.75rem;color:var(--text-dim)">Waiting for acceptance</div>
+          </div>
+          <div class="card">
+            <div style="font-size:0.8rem;color:var(--text-muted);text-transform:uppercase;font-weight:700">Active Services</div>
+            <div style="font-size:1.8rem;font-weight:800;color:var(--cyan);margin:6px 0">${active.length}</div>
+            <div style="font-size:0.75rem;color:var(--text-dim)">In transit or in progress</div>
+          </div>
+          <div class="card">
+            <div style="font-size:0.8rem;color:var(--text-muted);text-transform:uppercase;font-weight:700">Completed</div>
+            <div style="font-size:1.8rem;font-weight:800;color:var(--mint);margin:6px 0">${completed.length}</div>
+            <div style="font-size:0.75rem;color:var(--text-dim)">Finished successfully</div>
+          </div>
+          <div class="card">
+            <div style="font-size:0.8rem;color:var(--text-muted);text-transform:uppercase;font-weight:700">Total Recorded Earnings</div>
+            <div style="font-size:1.8rem;font-weight:800;color:#00E599;margin:6px 0">₹${totalEarnings.toFixed(2)}</div>
+            <div style="font-size:0.75rem;color:var(--text-dim)">From verified completed estimates</div>
+          </div>
+        </div>
+
+        <!-- Live Location Setting Widget -->
+        <div class="card" style="margin-bottom:28px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:10px">
+            <div style="font-weight:700;font-size:1.05rem">📍 Live GPS Broadcast Location</div>
+            <button class="ghost" onclick="syncProviderGPS(this)" style="padding:6px 14px">Detect &amp; Broadcast GPS</button>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:12px;align-items:center">
+            <input id="prov-lat" type="number" step="any" placeholder="Latitude" value="${p.lat != null ? p.lat.toFixed(5) : '11.0168'}">
+            <input id="prov-lng" type="number" step="any" placeholder="Longitude" value="${p.lng != null ? p.lng.toFixed(5) : '76.9558'}">
+            <button class="ghost" onclick="saveManualProviderLocation()">Save Location</button>
+          </div>
+          <div style="font-size:0.78rem;color:var(--text-muted);margin-top:8px">
+            Last location updated: ${p.loc_at ? esc(p.loc_at) + ' UTC' : 'Not broadcast yet'}. Nearby customers can only discover you when your location is broadcast.
+          </div>
+        </div>
+
+        <!-- Incoming Requests Section -->
+        <div style="margin-bottom:24px">
+          <h3 style="margin:0 0 14px">Incoming Requests (${incoming.length})</h3>
+          ${incoming.length ? incoming.map(renderBookingCardProvider).join('') : '<p style="color:var(--text-muted)">No pending incoming requests right now.</p>'}
+        </div>
+
+        <!-- Active Requests Section -->
+        <div style="margin-bottom:24px">
+          <h3 style="margin:0 0 14px">Active Services in Progress (${active.length})</h3>
+          ${active.length ? active.map(renderBookingCardProvider).join('') : '<p style="color:var(--text-muted)">No active services currently in progress.</p>'}
+        </div>
+      `;
+    }
+
+    function renderProviderIncoming(container) {
+      const incoming = bookings.filter(b => b.status === 'requested');
+      container.innerHTML = `
+        <h2 style="font-size:1.8rem;margin:0 0 18px;font-weight:800">Incoming Requests (${incoming.length})</h2>
+        ${incoming.length ? incoming.map(renderBookingCardProvider).join('') : '<div class="card" style="text-align:center;padding:36px;color:var(--text-muted)">No new requests at this moment. Make sure you are marked Online!</div>'}
+      `;
+    }
+
+    function renderProviderActive(container) {
+      const active = bookings.filter(b => ['accepted', 'on_the_way', 'arrived', 'estimate_submitted', 'estimate_approved', 'in_progress', 'awaiting_confirmation'].includes(b.status));
+      container.innerHTML = `
+        <h2 style="font-size:1.8rem;margin:0 0 18px;font-weight:800">Active Services (${active.length})</h2>
+        ${active.length ? active.map(renderBookingCardProvider).join('') : '<div class="card" style="text-align:center;padding:36px;color:var(--text-muted)">No active services currently in progress.</div>'}
+      `;
+    }
+
+    async function toggleProviderAvailability(avail) {
+      try {
+        await api('provider/availability', 'PUT', { available: avail });
+        toast(avail ? 'You are now Online & Available!' : 'You are now Offline', avail ? '🟢' : '⚪');
+        $('#avail-status-label').innerHTML = avail ? '<span style="color:var(--mint)">● Online &amp; Available</span>' : '<span style="color:var(--coral)">○ Offline</span>';
+      } catch (err) {
+        toast(err.message, '❌');
+      }
+    }
+
+    async function saveManualProviderLocation() {
+      const lat = parseFloat($('#prov-lat').value);
+      const lng = parseFloat($('#prov-lng').value);
+      if (isNaN(lat) || isNaN(lng)) return toast('Enter valid coordinates', '⚠️');
+      try {
+        await api('provider/location', 'PUT', { lat, lng });
+        toast('Location updated successfully!', '📍');
+      } catch (err) {
+        toast(err.message, '❌');
+      }
+    }
+
+    async function syncProviderGPS(btn) {
+      btn.disabled = true;
+      try {
+        const coords = await getDeviceCoords();
+        $('#prov-lat').value = coords.lat.toFixed(5);
+        $('#prov-lng').value = coords.lng.toFixed(5);
+        await api('provider/location', 'PUT', { lat: coords.lat, lng: coords.lng });
+        toast('Live GPS location synchronized!', '🛰️');
+      } catch (err) {
+        toast(err.message, '⚠️');
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    function renderBookingCardProvider(b) {
+      const e = b.estimate;
+      const st = b.status;
+      const stClean = st.replace(/_/g, ' ');
+
+      return `
+        <div class="card" style="margin-bottom:18px" id="booking-${b.id}">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:12px;margin-bottom:12px">
+            <div>
+              <div style="font-size:1.15rem;font-weight:800">
+                #${b.id} ${esc(b.category)}
+                ${b.emergency ? '<span class="tag tag-emergency">EMERGENCY</span>' : ''}
+              </div>
+              <div style="font-size:0.8rem;color:var(--text-muted);margin-top:2px">
+                Created: ${esc(b.created_at)} UTC
+              </div>
+            </div>
+            <span class="tag tag-${st} pulse">${stClean}</span>
+          </div>
+
+          <!-- Customer details -->
+          <div style="background:rgba(255,255,255,0.02);padding:12px 14px;border-radius:10px;margin-bottom:12px;border:1px solid var(--border)">
+            <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;font-size:0.88rem;margin-bottom:6px">
+              <div>👤 <b>Customer:</b> ${esc(b.customer_name)} (${esc(b.customer_phone || 'No phone')})</div>
+              <div>📍 <b>Location:</b> ${b.lat.toFixed(4)}, ${b.lng.toFixed(4)}</div>
+            </div>
+            <div style="font-size:0.9rem"><b>Description:</b> ${esc(b.description)}</div>
+          </div>
+
+          <!-- Existing Estimate Summary (if any) -->
+          ${e ? `
+            <div style="background:rgba(121,82,252,0.08);border:1px solid rgba(121,82,252,0.3);border-radius:10px;padding:12px;margin-bottom:14px;font-size:0.9rem">
+              <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+                <span>Submitted Estimate Breakdown:</span>
+                <b style="color:var(--mint)">Total: ₹${Number(e.total).toFixed(2)}</b>
+              </div>
+              <div style="font-size:0.8rem;color:var(--text-muted)">
+                Labour: ₹${Number(e.labour).toFixed(2)} | Parts: ₹${Number(e.parts).toFixed(2)} | Additional: ₹${Number(e.extra).toFixed(2)}
+              </div>
+              ${e.note ? `<div style="font-size:0.8rem;margin-top:4px"><b>Note:</b> ${esc(e.note)}</div>` : ''}
+            </div>
+          ` : ''}
+
+          <!-- Estimate Submission Section (Screen 6 in Reference Image) -->
+          ${st === 'arrived' ? `
+            <div class="card card-glass" style="border-color:var(--cyan);margin-bottom:16px;background:rgba(0,210,255,0.05)">
+              <div style="font-weight:800;color:var(--cyan);font-size:1.05rem;margin-bottom:12px;display:flex;align-items:center;gap:8px">
+                <span>📝</span> Submit Estimate for Customer Approval
+              </div>
+
+              <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:12px;margin-bottom:12px">
+                <div>
+                  <label>Labour Charge (₹)</label>
+                  <input type="number" min="0" step="any" placeholder="0.00" id="est-lab-${b.id}" oninput="calcLiveEstimateTotal(${b.id})">
+                </div>
+                <div>
+                  <label>Parts / Materials Charge (₹)</label>
+                  <input type="number" min="0" step="any" placeholder="0.00" id="est-par-${b.id}" oninput="calcLiveEstimateTotal(${b.id})">
+                </div>
+                <div>
+                  <label>Additional Charge (₹)</label>
+                  <input type="number" min="0" step="any" placeholder="0.00" id="est-ext-${b.id}" oninput="calcLiveEstimateTotal(${b.id})">
+                </div>
+                <div style="background:rgba(0,229,153,0.1);border:1px solid rgba(0,229,153,0.4);border-radius:10px;padding:8px 12px;display:flex;flex-direction:column;justify-content:center">
+                  <span style="font-size:0.75rem;color:var(--mint);font-weight:700">Total Estimated Charge</span>
+                  <span style="font-size:1.3rem;font-weight:800;color:var(--mint)" id="est-tot-${b.id}">₹0.00</span>
+                </div>
+              </div>
+
+              <div style="margin-bottom:14px">
+                <label>Work Description / Note</label>
+                <input placeholder="Details of replacement parts, labour time, diagnostic results..." id="est-note-${b.id}">
+              </div>
+
+              <div style="display:flex;justify-content:flex-end">
+                <button class="btn success" onclick="submitProviderEstimate(${b.id})">Send Complete Estimate to Customer →</button>
+              </div>
+            </div>
+          ` : ''}
+
+          <!-- Provider Workflow Actions (Strictly follows state transitions) -->
+          <div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end">
+            ${st === 'requested' ? `
+              <button class="danger" onclick="triggerBookingAction(${b.id}, 'reject')">Reject</button>
+              <button class="success" onclick="triggerBookingAction(${b.id}, 'accept')">Accept Request</button>
+            ` : ''}
+
+            ${st === 'accepted' ? `
+              <button class="btn" onclick="triggerBookingAction(${b.id}, 'on_the_way')">🚀 On the Way</button>
+            ` : ''}
+
+            ${st === 'on_the_way' ? `
+              <button class="btn" onclick="triggerBookingAction(${b.id}, 'arrived')">📍 Arrived at Location</button>
+            ` : ''}
+
+            ${st === 'estimate_submitted' ? `
+              <div style="font-size:0.85rem;color:var(--amber);font-weight:600;padding:8px 12px">
+                ⏳ Estimate submitted. Waiting for customer approval before starting work...
+              </div>
+            ` : ''}
+
+            ${st === 'estimate_approved' ? `
+              <button class="btn success" onclick="triggerBookingAction(${b.id}, 'start')">⚙️ Start Service</button>
+            ` : ''}
+
+            ${st === 'in_progress' ? `
+              <button class="btn success" onclick="triggerBookingAction(${b.id}, 'complete')">✓ Mark Service Complete</button>
+            ` : ''}
+
+            ${st === 'awaiting_confirmation' ? `
+              <div style="font-size:0.85rem;color:var(--mint);font-weight:600;padding:8px 12px">
+                ⏳ Marked complete. Awaiting final customer confirmation.
+              </div>
+            ` : ''}
+          </div>
+        </div>
+      `;
+    }
+
+    function calcLiveEstimateTotal(bid) {
+      const lab = parseFloat($(`#est-lab-${bid}`)?.value || 0) || 0;
+      const par = parseFloat($(`#est-par-${bid}`)?.value || 0) || 0;
+      const ext = parseFloat($(`#est-ext-${bid}`)?.value || 0) || 0;
+      const tot = Math.max(0, lab) + Math.max(0, par) + Math.max(0, ext);
+      const span = $(`#est-tot-${bid}`);
+      if (span) span.textContent = '₹' + tot.toFixed(2);
+    }
+
+    async function submitProviderEstimate(bid) {
+      const lab = parseFloat($(`#est-lab-${bid}`)?.value || 0) || 0;
+      const par = parseFloat($(`#est-par-${bid}`)?.value || 0) || 0;
+      const ext = parseFloat($(`#est-ext-${bid}`)?.value || 0) || 0;
+      const note = $(`#est-note-${bid}`)?.value.trim() || '';
+
+      if (lab < 0 || par < 0 || ext < 0) return toast('Amounts cannot be negative', '⚠️');
+      if (lab + par + ext <= 0) return toast('Estimate total must be greater than ₹0', '⚠️');
+
+      try {
+        await api(`bookings/${bid}/estimate`, 'POST', {
+          labour: lab,
+          parts: par,
+          extra: ext,
+          note
+        });
+        toast('Estimate dispatched to customer!', '📤');
+        poll(true);
+      } catch (err) {
+        toast(err.message, '❌');
+      }
+    }
+
+    /* ========================================================
+       ADMIN VIEWS (Screen 8)
+       ======================================================== */
+    async function renderAdminDashboard(container) {
+      container.innerHTML = `
+        <div style="margin-bottom:28px">
+          <h2 style="font-size:1.8rem;margin:0 0 6px;font-weight:800">Admin Platform Dashboard</h2>
+          <p style="color:var(--text-muted);margin:0">Platform overview, revenue volume, real-time analytics, and user verifications.</p>
+        </div>
+
+        <!-- 4 Overview Metric Cards -->
+        <div class="grid-4" style="margin-bottom:28px" id="admin-kpi-cards">
+          <div class="card">
+            <div style="font-size:0.8rem;color:var(--text-muted);text-transform:uppercase;font-weight:700">Total Customers</div>
+            <div style="font-size:1.9rem;font-weight:800;color:var(--primary);margin:6px 0" id="kpi-cust">-</div>
+            <div style="font-size:0.75rem;color:var(--text-dim)">Registered accounts</div>
+          </div>
+          <div class="card">
+            <div style="font-size:0.8rem;color:var(--text-muted);text-transform:uppercase;font-weight:700">Service Providers</div>
+            <div style="font-size:1.9rem;font-weight:800;color:var(--cyan);margin:6px 0" id="kpi-prov">-</div>
+            <div style="font-size:0.75rem;color:var(--text-dim)" id="kpi-avail">- available now</div>
+          </div>
+          <div class="card">
+            <div style="font-size:0.8rem;color:var(--text-muted);text-transform:uppercase;font-weight:700">Total Bookings</div>
+            <div style="font-size:1.9rem;font-weight:800;color:var(--mint);margin:6px 0" id="kpi-book">-</div>
+            <div style="font-size:0.75rem;color:var(--text-dim)" id="kpi-emg">- emergencies</div>
+          </div>
+          <div class="card">
+            <div style="font-size:0.8rem;color:var(--text-muted);text-transform:uppercase;font-weight:700">Platform Revenue Volume</div>
+            <div style="font-size:1.9rem;font-weight:800;color:#00E599;margin:6px 0" id="kpi-rev">-</div>
+            <div style="font-size:0.75rem;color:var(--text-dim)">Completed job estimates</div>
+          </div>
+        </div>
+
+        <!-- Charts Grid (Canvas Rendered) -->
+        <div class="grid-2" style="margin-bottom:28px">
+          <div class="card">
+            <h3 style="margin:0 0 16px;font-size:1.05rem">📈 Service Requests (Last 7 Days)</h3>
+            <div style="width:100%;height:220px;position:relative">
+              <canvas id="chart-daily" width="480" height="220" style="width:100%;height:100%"></canvas>
+            </div>
+          </div>
+          <div class="card">
+            <h3 style="margin:0 0 16px;font-size:1.05rem">🍩 Request Status Distribution</h3>
+            <div style="width:100%;height:220px;position:relative">
+              <canvas id="chart-status" width="480" height="220" style="width:100%;height:100%"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- User Management Quick Table -->
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+          <h3 style="margin:0;font-size:1.15rem">Provider Verification &amp; User Accounts</h3>
+          <button class="ghost" style="padding:6px 12px;font-size:0.85rem" onclick="switchTab('users')">Full User Directory →</button>
+        </div>
+        <div id="admin-users-preview" class="table-container"></div>
+      `;
+
+      loadAdminData();
+    }
+
+    async function loadAdminData() {
+      try {
+        const [stats, users] = await Promise.all([
+          api('admin/stats'),
+          api('admin/users')
+        ]);
+        adminStats = stats;
+        adminUsers = users;
+
+        // Populate KPIs
+        const totalBookings = (stats.bookings || []).reduce((sum, b) => sum + b.n, 0);
+        $('#kpi-cust').textContent = stats.customers;
+        $('#kpi-prov').textContent = stats.providers;
+        $('#kpi-avail').textContent = `${stats.available} online now`;
+        $('#kpi-book').textContent = totalBookings;
+        $('#kpi-emg').textContent = `${stats.emergencies} emergencies`;
+        $('#kpi-rev').textContent = '₹' + Number(stats.revenue || 0).toFixed(2);
+
+        // Render Canvas Charts
+        drawDailyRequestsChart(stats.daily_bookings || []);
+        drawStatusDonutChart(stats.bookings || []);
+
+        // Render Table Preview
+        renderAdminUserTable($('#admin-users-preview'), users.slice(0, 8));
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    function renderAdminUsers(container) {
+      container.innerHTML = `
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+          <div>
+            <h2 style="font-size:1.8rem;margin:0 0 6px;font-weight:800">User Management</h2>
+            <p style="color:var(--text-muted);margin:0">Search users, verify service providers, and manage platform permissions.</p>
+          </div>
+          <input placeholder="Search users by name, email, or role..." oninput="filterAdminUsers(this.value)" style="max-width:320px">
+        </div>
+        <div id="admin-users-full" class="table-container"></div>
+      `;
+      renderAdminUserTable($('#admin-users-full'), adminUsers);
+    }
+
+    function filterAdminUsers(q) {
+      const query = q.toLowerCase();
+      const filtered = adminUsers.filter(u => 
+        u.name.toLowerCase().includes(query) ||
+        u.email.toLowerCase().includes(query) ||
+        u.role.toLowerCase().includes(query)
+      );
+      renderAdminUserTable($('#admin-users-full'), filtered);
+    }
+
+    function renderAdminUserTable(container, users) {
+      if (!container) return;
+      container.innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Name &amp; Email</th>
+              <th>Role</th>
+              <th>Category / Skills</th>
+              <th>Status</th>
+              <th>Verification</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${users.map(u => `
+              <tr>
+                <td>#${u.id}</td>
+                <td>
+                  <b>${esc(u.name)}</b>
+                  <div style="font-size:0.78rem;color:var(--text-muted)">${esc(u.email)}</div>
+                </td>
+                <td><span class="role-badge ${u.role}">${esc(u.role)}</span></td>
+                <td>
+                  ${u.role === 'provider' ? `
+                    <div style="font-weight:600">${esc(u.category || 'Specialist')}</div>
+                    <div style="font-size:0.75rem;color:var(--text-muted)">${esc(u.skills || '-')}</div>
+                  ` : '-'}
+                </td>
+                <td>
+                  ${u.role === 'provider' ? (
+                    u.available ? '<span class="tag tag-completed">Online</span>' : '<span class="tag">Offline</span>'
+                  ) : '<span class="tag">Active</span>'}
+                </td>
+                <td>
+                  ${u.role === 'provider' ? `
+                    <label style="display:flex;align-items:center;gap:6px;margin:0;cursor:pointer">
+                      <input type="checkbox" style="width:auto;margin:0" ${u.verified ? 'checked' : ''} onchange="toggleProviderVerification(${u.id}, this.checked)">
+                      <span style="font-size:0.8rem">${u.verified ? 'Verified ✓' : 'Unverified'}</span>
+                    </label>
+                  ` : '-'}
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+    }
+
+    async function toggleProviderVerification(pid, verified) {
+      try {
+        await api(`admin/providers/${pid}/verify`, 'PUT', { verified });
+        toast(verified ? 'Provider verified' : 'Provider unverified', '🛡️');
+      } catch (err) {
+        toast(err.message, '❌');
+      }
+    }
+
+    function renderAdminBookings(container) {
+      container.innerHTML = `
+        <div style="margin-bottom:20px">
+          <h2 style="font-size:1.8rem;margin:0 0 6px;font-weight:800">All Service Bookings</h2>
+          <p style="color:var(--text-muted);margin:0">Complete record of every service dispatched on the platform.</p>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Booking ID</th>
+                <th>Category</th>
+                <th>Customer</th>
+                <th>Provider</th>
+                <th>Status</th>
+                <th>Estimate</th>
+                <th>Created (UTC)</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${bookings.map(b => `
+                <tr>
+                  <td><b>#${b.id}</b></td>
+                  <td>${esc(b.category)} ${b.emergency ? '<span class="tag tag-emergency">EMG</span>' : ''}</td>
+                  <td>${esc(b.customer_name)}</td>
+                  <td>${esc(b.provider_name || 'Unassigned')}</td>
+                  <td><span class="tag tag-${b.status}">${esc(b.status.replace(/_/g, ' '))}</span></td>
+                  <td>${b.estimate ? '₹' + Number(b.estimate.total).toFixed(2) : '-'}</td>
+                  <td style="font-size:0.8rem;color:var(--text-muted)">${esc(b.created_at)}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
+    /* HTML5 Canvas Charts for Admin */
+    function drawDailyRequestsChart(data) {
+      const canvas = document.getElementById('chart-daily');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width, h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+
+      const items = data.length ? data.slice(-7) : [
+        { d: 'Day 1', n: 1 }, { d: 'Day 2', n: 2 }, { d: 'Day 3', n: 1 }, { d: 'Day 4', n: 3 }, { d: 'Day 5', n: 2 }
+      ];
+
+      const padX = 40, padY = 30;
+      const maxVal = Math.max(...items.map(i => i.n), 4);
+      const stepX = (w - padX * 2) / Math.max(items.length - 1, 1);
+
+      // Grid lines
+      ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+      ctx.lineWidth = 1;
+      for (let i = 0; i <= 4; i++) {
+        const y = h - padY - (i / 4) * (h - padY * 2);
+        ctx.beginPath();
+        ctx.moveTo(padX, y);
+        ctx.lineTo(w - padX, y);
+        ctx.stroke();
+      }
+
+      // Fill Area Gradient
+      const grad = ctx.createLinearGradient(0, padY, 0, h - padY);
+      grad.addColorStop(0, 'rgba(121, 82, 252, 0.45)');
+      grad.addColorStop(1, 'rgba(0, 210, 255, 0.0)');
+
+      ctx.beginPath();
+      items.forEach((item, idx) => {
+        const x = padX + idx * stepX;
+        const y = h - padY - (item.n / maxVal) * (h - padY * 2);
+        if (idx === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.lineTo(padX + (items.length - 1) * stepX, h - padY);
+      ctx.lineTo(padX, h - padY);
+      ctx.closePath();
+      ctx.fillStyle = grad;
+      ctx.fill();
+
+      // Stroke line
+      ctx.beginPath();
+      items.forEach((item, idx) => {
+        const x = padX + idx * stepX;
+        const y = h - padY - (item.n / maxVal) * (h - padY * 2);
+        if (idx === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.strokeStyle = '#00D2FF';
+      ctx.lineWidth = 3;
+      ctx.stroke();
+
+      // Nodes
+      items.forEach((item, idx) => {
+        const x = padX + idx * stepX;
+        const y = h - padY - (item.n / maxVal) * (h - padY * 2);
+        ctx.fillStyle = '#7952FC';
+        ctx.beginPath();
+        ctx.arc(x, y, 5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // Label
+        ctx.fillStyle = '#8F9BB7';
+        ctx.font = '11px system-ui';
+        ctx.textAlign = 'center';
+        ctx.fillText(item.d.slice(-5), x, h - 10);
+      });
+    }
+
+    function drawStatusDonutChart(items) {
+      const canvas = document.getElementById('chart-status');
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      const w = canvas.width, h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+
+      const counts = { completed: 0, in_progress: 0, pending: 0, cancelled: 0 };
+      items.forEach(i => {
+        if (i.status === 'completed') counts.completed += i.n;
+        else if (['in_progress', 'estimate_approved', 'arrived', 'on_the_way'].includes(i.status)) counts.in_progress += i.n;
+        else if (['requested', 'accepted', 'estimate_submitted'].includes(i.status)) counts.pending += i.n;
+        else counts.cancelled += i.n;
+      });
+
+      const total = Object.values(counts).reduce((a, b) => a + b, 0) || 1;
+      const slices = [
+        { label: 'Completed', val: counts.completed, color: '#00E599' },
+        { label: 'In Progress', val: counts.in_progress, color: '#00D2FF' },
+        { label: 'Pending', val: counts.pending, color: '#FFB800' },
+        { label: 'Cancelled', val: counts.cancelled, color: '#FF4757' }
+      ];
+
+      const cx = w * 0.35, cy = h * 0.5, r = 70, innerR = 45;
+      let startAngle = -Math.PI / 2;
+
+      slices.forEach(s => {
+        const angle = (s.val / total) * Math.PI * 2;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, startAngle, startAngle + angle);
+        ctx.arc(cx, cy, innerR, startAngle + angle, startAngle, true);
+        ctx.closePath();
+        ctx.fillStyle = s.color;
+        ctx.fill();
+        startAngle += angle;
+      });
+
+      // Center text
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 18px system-ui';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(total, cx, cy);
+
+      // Legend
+      const lx = w * 0.65;
+      slices.forEach((s, idx) => {
+        const ly = 55 + idx * 30;
+        ctx.fillStyle = s.color;
+        ctx.fillRect(lx, ly, 12, 12);
+        ctx.fillStyle = '#F5F7FF';
+        ctx.font = '12px system-ui';
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(`${s.label}: ${s.val} (${Math.round((s.val / total) * 100)}%)`, lx + 18, ly + 6);
+      });
+    }
+
+    /* ========================================================
+       USER PROFILE VIEW
+       ======================================================== */
+    function renderProfileView(container) {
+      container.innerHTML = `
+        <div style="max-width:640px;margin:0 auto">
+          <div style="margin-bottom:24px">
+            <h2 style="font-size:1.8rem;margin:0 0 6px;font-weight:800">My Profile</h2>
+            <p style="color:var(--text-muted);margin:0">Manage personal contact details and preferences.</p>
+          </div>
+
+          <div class="card card-glass">
+            <form onsubmit="handleProfileUpdate(event)">
+              <div style="margin-bottom:14px">
+                <label>Full Name</label>
+                <input id="prof-name" value="${esc(me.name)}" required>
+              </div>
+              <div style="margin-bottom:14px">
+                <label>Email Address</label>
+                <input value="${esc(me.email)}" disabled style="opacity:0.6">
+              </div>
+              <div style="margin-bottom:14px">
+                <label>Phone Number</label>
+                <input id="prof-phone" value="${esc(me.phone || '')}" placeholder="9876543210">
+              </div>
+              ${me.role === 'provider' ? `
+                <div style="margin-bottom:14px">
+                  <label>Skills &amp; Service Description</label>
+                  <input id="prof-skills" value="${esc(me.provider?.skills || '')}">
+                </div>
+              ` : ''}
+              <div style="display:flex;justify-content:flex-end;margin-top:20px">
+                <button type="submit">Save Changes</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      `;
+    }
+
+    async function handleProfileUpdate(e) {
+      e.preventDefault();
+      const payload = {
+        name: $('#prof-name').value.trim(),
+        phone: $('#prof-phone').value.trim()
+      };
+      if (me.role === 'provider') {
+        payload.skills = $('#prof-skills').value.trim();
+      }
+      try {
+        me = await api('me', 'PUT', payload);
+        toast('Profile updated!', '✓');
+        renderHeader();
+      } catch (err) {
+        toast(err.message, '❌');
+      }
+    }
+
+    /* ========================================================
+       REAL-TIME POLLING ENGINE
+       ======================================================== */
+    async function poll(force = false) {
+      if (!me) return;
+      try {
+        const data = await api('bookings');
+        const sig = JSON.stringify(data);
+        if (!force && sig === lastSig) return;
+        lastSig = sig;
+        bookings = data;
+
+        // Update badge counts in sidebar
+        renderSidebarLinks();
+
+        // Re-render active list if not actively editing an input
+        const isEditing = () => {
+          const activeEl = document.activeElement;
+          return activeEl && ['INPUT', 'TEXTAREA', 'SELECT'].includes(activeEl.tagName);
+        };
+
+        if (!isEditing()) {
+          const custActiveList = $('#customer-active-list');
+          if (custActiveList && activeTab === 'dashboard') {
+            const activeBookings = bookings.filter(b => b.status !== 'completed' && b.status !== 'cancelled' && b.status !== 'rejected');
+            custActiveList.innerHTML = activeBookings.length ? activeBookings.map(renderBookingCardCustomer).join('') : `
+              <div class="card" style="text-align:center;padding:36px;color:var(--text-muted)">
+                <div style="font-size:2.5rem;margin-bottom:10px">🛵</div>
+                <div style="font-size:1.1rem;font-weight:600;color:var(--text)">No active service requests</div>
+                <p style="margin:6px 0 16px">Need urgent repairs or help? Pick a category above to request service.</p>
+                <button onclick="switchTab('book')">Request a Service Now</button>
+              </div>
+            `;
+          }
+
+          const custBookingsList = $('#customer-bookings-list');
+          if (custBookingsList && activeTab === 'requests') {
+            custBookingsList.innerHTML = bookings.length ? bookings.map(renderBookingCardCustomer).join('') : '<p style="color:var(--text-muted)">No bookings yet.</p>';
+          }
+        }
+      } catch (err) {
+        if (err.status === 401) boot();
+      }
+    }
+
+    // Start App
+    boot();
+  </script>
+</body>
+</html>

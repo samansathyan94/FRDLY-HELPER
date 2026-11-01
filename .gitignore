@@ -1,0 +1,21 @@
+.env
+.env.*
+!.env.example
+
+.venv/
+venv/
+env/
+
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+
+.vscode/
+.idea/
+*.log
+# Local databases
+*.db
+*.sqlite
+*.sqlite3
